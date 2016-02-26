@@ -132,8 +132,8 @@ function admin(&$out) {
   $this->analyze($out);
  }
 
- global $optimize;
- if ($optimize) {
+ global $optimizenow;
+ if ($optimizenow) {
   $this->optimizeAll();
  }
 
