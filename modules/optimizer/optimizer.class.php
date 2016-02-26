@@ -251,10 +251,11 @@ function usual(&$out) {
    }
    $rules[$key]=array('optimize'=>$records[$i]['OPTIMIZE']);
    if ($records[$i]['KEEP']) {
-    $rules[$key]['KEEP']=(int)$records[$i]['KEEP'];
+    $rules[$key]['keep']=(int)$records[$i]['KEEP'];
    }
   }
 
+//print_r($rules);
 
 //STEP 2 -- optimize values in time
 $sqlQuery = "SELECT DISTINCT(VALUE_ID)
@@ -267,11 +268,21 @@ $total = count($values);
 for ($i = 0; $i < $total; $i++)
 {
    $value_id = $values[$i]['VALUE_ID'];
+
+   /*
+$sqlQuery = "SELECT pvalues.ID, properties.TITLE as PTITLE, classes.TITLE as CTITLE, objects.TITLE as OTITLE
+               FROM pvalues 
+               LEFT JOIN objects ON pvalues.OBJECT_ID = objects.ID
+               LEFT JOIN classes ON objects.CLASS_ID  = classes.ID
+               LEFT JOIN properties ON pvalues.PROPERTY_ID = properties.ID
+             HAVING PTITLE != ''";
+             */
+
    $sqlQuery = "SELECT pvalues.ID, properties.TITLE as PTITLE, objects.TITLE as OTITLE, classes.TITLE as CTITLE
                   FROM pvalues
                   LEFT JOIN objects ON pvalues.OBJECT_ID = objects.ID
                   LEFT JOIN properties ON pvalues.PROPERTY_ID = properties.ID
-                  LEFT JOIN classes ON classes.ID = properties.CLASS_ID
+                  LEFT JOIN classes ON classes.ID = objects.CLASS_ID
                  WHERE pvalues.ID = '" . $value_id . "'";
 
    $pvalue = SQLSelectOne($sqlQuery);
@@ -279,6 +290,7 @@ for ($i = 0; $i < $total; $i++)
    if ($pvalue['CTITLE'] != '')
    {
       $key = $pvalue['CTITLE'] . '.' . $pvalue['PTITLE'];
+      //echo $key."<br/>";
       $rule = '';
    
       if ($rules[$key])
