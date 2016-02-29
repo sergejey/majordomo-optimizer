@@ -237,6 +237,7 @@ function usual(&$out) {
 
 
  function optimizeAll() {
+  set_time_limit(0);
   $records=SQLSelect("SELECT * FROM optimizerdata");
   $rules=array();
   $total=count($records);
