@@ -135,6 +135,7 @@ function admin(&$out) {
  global $optimizenow;
  if ($optimizenow) {
   $this->optimizeAll();
+  exit;
  }
 
 
@@ -164,6 +165,7 @@ function admin(&$out) {
 */
  function analyze(&$out) {
 
+ set_time_limit(0);
  $result=array();
 $sqlQuery = "SELECT pvalues.ID, properties.TITLE as PTITLE, classes.TITLE as CTITLE, objects.TITLE as OTITLE
                FROM pvalues 
@@ -379,7 +381,7 @@ $sqlQuery = "SELECT pvalues.ID, properties.TITLE as PTITLE, classes.TITLE as CTI
 SQLExec("OPTIMIZE TABLE phistory;");
 
 echo "<h1>DONE!</h1>";
-exit;
+
 
 
  }
