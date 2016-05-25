@@ -46,8 +46,9 @@
  </label>
  <div class="col-lg-4">
  <input type="radio" name="optimize" value=""[#if OPTIMIZE==""#] checked[#endif#]> None
- <input type="radio" name="optimize" value="avg"[#if OPTIMIZE=="max"#] checked[#endif#]> AVG
+ <input type="radio" name="optimize" value="avg"[#if OPTIMIZE=="avg"#] checked[#endif#]> AVG
  <input type="radio" name="optimize" value="max"[#if OPTIMIZE=="max"#] checked[#endif#]> MAX
+ <input type="radio" name="optimize" value="sum"[#if OPTIMIZE=="sum"#] checked[#endif#]> SUM
  </div>
 </div>
 <div class="form-group">
