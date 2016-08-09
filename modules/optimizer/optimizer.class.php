@@ -577,7 +577,7 @@ function optimizeHistoryData($valueID, $type, $interval, $start, $end)
 *
 * @access private
 */
- function dbInstall() {
+ function dbInstall($data) {
 /*
 optimizerdata - 
 */
