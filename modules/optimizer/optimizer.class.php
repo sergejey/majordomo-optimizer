@@ -179,8 +179,15 @@ $total = count($pvalues);
 
 for ($i = 0; $i < $total; $i++)
 {
+
+    if (defined('SEPARATE_HISTORY_STORAGE') && SEPARATE_HISTORY_STORAGE == 1) {
+        $history_table = createHistoryTable($pvalues[$i]['ID']);
+    } else {
+        $history_table = 'phistory';
+    }
+
    $sqlQuery = "SELECT COUNT(*) as TOTAL
-                  FROM phistory
+                  FROM $history_table
                  WHERE VALUE_ID = '" . $pvalues[$i]['ID'] . "'";
 
    $tmp = SQLSelectOne($sqlQuery);
@@ -261,10 +268,18 @@ function usual(&$out) {
 //print_r($rules);
 
 //STEP 2 -- optimize values in time
-$sqlQuery = "SELECT DISTINCT(VALUE_ID)
-               FROM phistory";
 
-$values = SQLSelect($sqlQuery);
+//$sqlQuery = "SELECT DISTINCT(VALUE_ID) FROM phistory";
+//$values = SQLSelect($sqlQuery);
+
+     $sqlQuery = "SELECT pvalues.ID as VALUE_ID, properties.TITLE as PTITLE, classes.TITLE as CTITLE, objects.TITLE as OTITLE
+               FROM pvalues 
+               LEFT JOIN objects ON pvalues.OBJECT_ID = objects.ID
+               LEFT JOIN classes ON objects.CLASS_ID  = classes.ID
+               LEFT JOIN properties ON pvalues.PROPERTY_ID = properties.ID
+             HAVING PTITLE != ''";
+
+     $values = SQLSelect($sqlQuery);
 
 $total = count($values);
 
@@ -272,16 +287,13 @@ for ($i = 0; $i < $total; $i++)
 {
    $value_id = $values[$i]['VALUE_ID'];
 
-   /*
-$sqlQuery = "SELECT pvalues.ID, properties.TITLE as PTITLE, classes.TITLE as CTITLE, objects.TITLE as OTITLE
-               FROM pvalues 
-               LEFT JOIN objects ON pvalues.OBJECT_ID = objects.ID
-               LEFT JOIN classes ON objects.CLASS_ID  = classes.ID
-               LEFT JOIN properties ON pvalues.PROPERTY_ID = properties.ID
-             HAVING PTITLE != ''";
-             */
+    if (defined('SEPARATE_HISTORY_STORAGE') && SEPARATE_HISTORY_STORAGE == 1) {
+        $history_table = createHistoryTable($value_id);
+    } else {
+        $history_table = 'phistory';
+    }
 
-   $sqlQuery = "SELECT pvalues.ID, properties.TITLE as PTITLE, objects.TITLE as OTITLE, classes.TITLE as CTITLE
+    $sqlQuery = "SELECT pvalues.ID, properties.TITLE as PTITLE, objects.TITLE as OTITLE, classes.TITLE as CTITLE
                   FROM pvalues
                   LEFT JOIN objects ON pvalues.OBJECT_ID = objects.ID
                   LEFT JOIN properties ON pvalues.PROPERTY_ID = properties.ID
@@ -309,7 +321,7 @@ $sqlQuery = "SELECT pvalues.ID, properties.TITLE as PTITLE, classes.TITLE as CTI
          echo "<h3>" . $pvalue['OTITLE'] . " (" . $key . ")</h3>";
          
          $sqlQuery = "SELECT COUNT(*) as TOTAL
-                        FROM phistory
+                        FROM $history_table
                        WHERE VALUE_ID = '" . $value_id . "'";
 
          $total_before = current(SQLSelectOne($sqlQuery));
@@ -318,7 +330,7 @@ $sqlQuery = "SELECT pvalues.ID, properties.TITLE as PTITLE, classes.TITLE as CTI
          {
             echo " removing old (" . (int)$rule['keep'] . ")";
             $sqlQuery = "DELETE
-                           FROM phistory
+                           FROM $history_table
                           WHERE VALUE_ID = '" . $value_id . "'
                             AND TO_DAYS(NOW()) - TO_DAYS(ADDED) >= " . (int)$rule['keep'];
             SQLExec($sqlQuery);
@@ -330,7 +342,7 @@ $sqlQuery = "SELECT pvalues.ID, properties.TITLE as PTITLE, classes.TITLE as CTI
             flush();
 
             $sqlQuery = "SELECT UNIX_TIMESTAMP(ADDED)
-                           FROM phistory
+                           FROM $history_table
                           WHERE VALUE_ID = '" . $value_id . "'
                           ORDER BY ADDED
                           LIMIT 1";
@@ -406,10 +418,17 @@ function optimizeHistoryData($valueID, $type, $interval, $start, $end)
    $endDate = date('Y-m-d H:i:s', $end);
 
    echo "Value ID: $valueID <br />";
+
+    if (defined('SEPARATE_HISTORY_STORAGE') && SEPARATE_HISTORY_STORAGE == 1) {
+        $history_table = createHistoryTable($valueID);
+    } else {
+        $history_table = 'phistory';
+    }
+
    echo "Interval from " . $beginDate . " to " . $endDate . " (every " . $interval . " seconds)<br />";
    
    $sqlQuery = "SELECT COUNT(*)
-                  FROM phistory
+                  FROM $history_table
                  WHERE VALUE_ID =  '" . $valueID . "'
                    AND ADDED    >= '" . $beginDate . "'
                    AND ADDED    <= '" . $endDate . "'";
@@ -436,7 +455,7 @@ function optimizeHistoryData($valueID, $type, $interval, $start, $end)
    flush();
 
    $sqlQuery = "SELECT UNIX_TIMESTAMP(ADDED)
-                  FROM phistory
+                  FROM $history_table
                  WHERE VALUE_ID =  '" . $valueID . "'
                    AND ADDED    >= '" . $beginDate . "'
                  ORDER BY ADDED
@@ -445,7 +464,7 @@ function optimizeHistoryData($valueID, $type, $interval, $start, $end)
    $firstStart = current(SQLSelectOne($sqlQuery));
 
    $sqlQuery = "SELECT UNIX_TIMESTAMP(ADDED)
-                  FROM phistory
+                  FROM $history_table
                  WHERE VALUE_ID = '" . $valueID . "'
                    AND ADDED    <= '" . $endDate . "'
                  ORDER BY ADDED DESC
@@ -472,7 +491,7 @@ function optimizeHistoryData($valueID, $type, $interval, $start, $end)
       flush();
 
       $sqlQuery = "SELECT * 
-                     FROM phistory
+                     FROM $history_table
                     WHERE VALUE_ID = '" . $valueID . "'
                       AND ADDED    >= '" . date('Y-m-d H:i:s', $start) . "'
                       AND ADDED    <  '" . date('Y-m-d H:i:s', $start + $interval) . "'";
@@ -495,7 +514,7 @@ function optimizeHistoryData($valueID, $type, $interval, $start, $end)
             $newValue = array_sum($values) / $total;
 
          $sqlQuery = "DELETE
-                        FROM phistory
+                        FROM $history_table
                        WHERE VALUE_ID = '" . $valueID . "'
                          AND ADDED    >= '" . date('Y-m-d H:i:s', $start) . "'
                          AND ADDED    < '" . date('Y-m-d H:i:s', $start + $interval) . "'";
@@ -509,8 +528,12 @@ function optimizeHistoryData($valueID, $type, $interval, $start, $end)
          $rec['VALUE'] = $newValue;
          $rec['ADDED'] = date('Y-m-d H:i:s', $addedDate);
          
-         SQLInsert('phistory', $rec);
-         
+         SQLInsert($history_table, $rec);
+
+         if ($history_table!='phistory') {
+             SQLExec("OPTIMIZE TABLE ".$history_table);
+         }
+
          $totalRemoved += $total;
       }
       
