@@ -16,7 +16,13 @@
  <tr>
   <td valign="top">[#CLASS#]: [#OBJECT#].[#PROPERTY#]</td>
   <td valign="top">[#TOTAL#]</td>
-  <td valign="top"><a href="?view_mode=edit_optimizerdata&id=&class_name=[#CLASS#]&property_name=[#PROPERTY#]&object_name=[#OBJECT#]" class="btn btn-default"><#LANG_ADD#></a></td>
+  <td valign="top">
+   [#if OPTIMIZE_NOW!=""#]
+   <a href="?optimizenow=1&id=[#OPTIMIZE_NOW#]" target="_blank" class="btn btn-green">Optimize Now</a>
+   [#else#]
+   <a href="?view_mode=edit_optimizerdata&id=&class_name=[#CLASS#]&property_name=[#PROPERTY#]&object_name=[#OBJECT#]" class="btn btn-default"><#LANG_ADD#></a>
+   [#endif#]
+  </td>
  </tr>
  [#end RECORDS#]
  <tr>

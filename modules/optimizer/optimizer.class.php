@@ -133,8 +133,9 @@ function admin(&$out) {
  }
 
  global $optimizenow;
+ global $id;
  if ($optimizenow) {
-  $this->optimizeAll();
+  $this->optimizeAll($id);
   exit;
  }
 
@@ -196,7 +197,14 @@ for ($i = 0; $i < $total; $i++)
    {
 
       $grand_total += $tmp['TOTAL'];
-      $result['RECORDS'][]=array('CLASS'=>$pvalues[$i]['CTITLE'], 'PROPERTY'=>$pvalues[$i]['PTITLE'], 'OBJECT'=>$pvalues[$i]['OTITLE'], 'TOTAL'=>$tmp['TOTAL']);
+      $rec=array('CLASS'=>$pvalues[$i]['CTITLE'], 'PROPERTY'=>$pvalues[$i]['PTITLE'], 'OBJECT'=>$pvalues[$i]['OTITLE'], 'TOTAL'=>$tmp['TOTAL']);
+
+      $opt_rec=SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '".DBSafe($pvalues[$i]['PTITLE'])."' AND OBJECT_NAME LIKE '".DBSafe($pvalues[$i]['OTITLE'])."'");
+       if ($opt_rec['ID']) {
+           $rec['OPTIMIZE_NOW']=$opt_rec['ID'];
+       }
+       $result['RECORDS'][]=$rec;
+
       /*
       echo $pvalues[$i]['CTITLE'] . "." . $pvalues[$i]['PTITLE'] . " (object: " . $pvalues[$i]['OTITLE'] . "): ";
       echo $tmp['TOTAL'] > 5000 ? "<b>" . $tmp['TOTAL'] . "</b>" : $tmp['TOTAL'];
@@ -207,6 +215,15 @@ for ($i = 0; $i < $total; $i++)
       */
    }
 }
+
+     function cmp_history_total($a,$b) {
+         if ($a['TOTAL'] == $b['TOTAL']) {
+             return 0;
+         }
+         return ($a['TOTAL'] > $b['TOTAL']) ? -1 : 1;
+     }
+
+ usort($result['RECORDS'],'cmp_history_total');
 
 $out['RECORDS']=$result['RECORDS'];
 $out['GRAND_TOTAL']=$grand_total;
@@ -245,9 +262,13 @@ function usual(&$out) {
  }
 
 
- function optimizeAll() {
+ function optimizeAll($id=0) {
   set_time_limit(0);
-  $records=SQLSelect("SELECT * FROM optimizerdata");
+     if ($id) {
+         $records=SQLSelect("SELECT * FROM optimizerdata WHERE ID=".(int)$id);
+     } else {
+         $records=SQLSelect("SELECT * FROM optimizerdata");
+     }
   $rules=array();
   $total=count($records);
   for($i=0;$i<$total;$i++) {
@@ -622,3 +643,5 @@ EOD;
 * TW9kdWxlIGNyZWF0ZWQgRmViIDI2LCAyMDE2IHVzaW5nIFNlcmdlIEouIHdpemFyZCAoQWN0aXZlVW5pdCBJbmMgd3d3LmFjdGl2ZXVuaXQuY29tKQ==
 *
 */
+
+
