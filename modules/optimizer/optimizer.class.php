@@ -303,6 +303,7 @@ class optimizer extends module
                     echo "<p>Total unsorted: $total</p>";
                     SQLExec("DELETE FROM phistory WHERE VALUE_ID NOT IN (" . implode(',', $seen_properties) . ")");
                     echo "<p>DELETED</p>";
+                    DebMes('Total unsorted: '.$total.' deleted','optimizer');
                 }
             }
             $records = SQLSelect("SELECT * FROM optimizerdata");
@@ -339,6 +340,7 @@ class optimizer extends module
              HAVING PTITLE != ''";
 
         $values = SQLSelect($sqlQuery);
+        $total_records_removed = 0;
 
         $total = count($values);
 
@@ -375,12 +377,14 @@ class optimizer extends module
                 if ($rule) {
                     //processing
                     echo "<h3>" . $pvalue['OTITLE'] . " (" . $key . ")</h3>";
+                    DebMes('Processing '.$pvalue['OTITLE']. " (" . $key . ")",'optimizer');
 
                     $sqlQuery = "SELECT COUNT(*) as TOTAL
                         FROM $history_table
                        WHERE VALUE_ID = '" . $value_id . "'";
 
                     $total_before = current(SQLSelectOne($sqlQuery));
+                    DebMes('Before optimizing: '.$total_before,'optimizer');
 
                     if (isset($rule['keep'])) {
                         echo " removing old (" . (int)$rule['keep'] . ")";
@@ -440,13 +444,15 @@ class optimizer extends module
                        WHERE VALUE_ID = '" . $value_id . "'";
                     $total_after = current(SQLSelectOne($sqlQuery));
                     echo " <b>(changed " . $total_before . " -> " . $total_after . ")</b><br />";
+                    $total_records_removed+=($total_before-$total_after);
+                    DebMes('After optimizing: '.$total_after,'optimizer');
                 }
             }
         }
 
         SQLExec("OPTIMIZE TABLE phistory;");
-
-        echo "<h1>DONE!</h1>";
+        DebMes('Optimization done. Total removed: '.$total_records_removed,'optimizer');
+        echo "<h1>DONE! (Total records removed: ".$total_records_removed.")</h1>";
 
 
     }
