@@ -125,6 +125,7 @@ class optimizer extends module
         $this->getConfig();
         $out['START_DAILY'] = (int)$this->config['START_DAILY'];
         $out['START_TIME'] = (int)$this->config['START_TIME'];
+        $out['AUTO_OPTIMIZE']=(int)$this->config['AUTO_OPTIMIZE'];
 
         if ($this->view_mode == 'update_settings') {
             global $start_time;
@@ -133,13 +134,16 @@ class optimizer extends module
             global $start_daily;
             $this->config['START_DAILY'] = (int)$start_daily;
 
+            global $auto_optimize;
+            $this->config['AUTO_OPTIMIZE'] = (int)$auto_optimize;
+
             $this->saveConfig();
             $this->redirect("?");
         }
 
         global $analyze;
         if ($analyze) {
-            $this->analyze($out);
+            $this->analyze($out,$this->config['AUTO_OPTIMIZE'],0);
         }
 
         global $optimizenow;
@@ -174,10 +178,13 @@ class optimizer extends module
      *
      * @access public
      */
-    function analyze(&$out)
+    function analyze(&$out, $total_limit = 0, $auto_append = 0)
     {
 
         set_time_limit(0);
+
+        $to_optimize=array();
+
         $result = array();
 
         $sqlQuery = "SELECT pvalues.ID, properties.TITLE AS PTITLE, classes.TITLE AS CTITLE, objects.TITLE AS OTITLE
@@ -211,13 +218,34 @@ class optimizer extends module
             if ($tmp['TOTAL']) {
                 $grand_total += $tmp['TOTAL'];
                 $rec = array('CLASS' => $pvalues[$i]['CTITLE'], 'PROPERTY' => $pvalues[$i]['PTITLE'], 'OBJECT' => $pvalues[$i]['OTITLE'], 'TOTAL' => $tmp['TOTAL']);
-
                 $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DBSafe($pvalues[$i]['PTITLE']) . "' AND OBJECT_NAME LIKE '" . DBSafe($pvalues[$i]['OTITLE']) . "'");
                 if ($opt_rec['ID']) {
                     $rec['OPTIMIZE_NOW'] = $opt_rec['ID'];
+                } else {
+                    $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DBSafe($pvalues[$i]['PTITLE']) . "' AND CLASS_NAME LIKE '" . DBSafe($pvalues[$i]['CTITLE']) . "'");
+                    if ($opt_rec['ID']) {
+                        $rec['OPTIMIZE_NOW'] = $opt_rec['ID'];
+                    }
+                }
+                if (!$opt_rec['ID'] && $tmp['TOTAL']>$total_limit) {
+                    $rec['WARNING']=1;
+                    if ($auto_append==1) {
+                        // add optimize record automatically
+                        $to_optimize[]=$rec;
+                    }
                 }
                 $result['RECORDS'][] = $rec;
             }
+        }
+
+        foreach($to_optimize as $optimize_rec) {
+            $opt_rec=array();
+            $opt_rec['CLASS_NAME']=$optimize_rec['CLASS'];
+            $opt_rec['OBJECT_NAME']=$optimize_rec['OBJECT'];
+            $opt_rec['PROPERTY_NAME']=$optimize_rec['PROPERTY'];
+            $opt_rec['OPTIMIZE']='avg';
+            SQLInsert('optimizerdata',$opt_rec);
+            //dprint($optimize_rec,false);
         }
 
         if ($history_table == 'phistory' && count($seen_properties)>0) {
@@ -278,6 +306,7 @@ class optimizer extends module
 
     function optimizeAll($id = 0)
     {
+        DebMes('Starting optimization procedure','optimizer');
         set_time_limit(0);
         if ($id) {
             $records = SQLSelect("SELECT * FROM optimizerdata WHERE ID=" . (int)$id);
@@ -502,8 +531,8 @@ class optimizer extends module
         $tmp = $end - $start;
         $tmp2 = round($tmp / $interval);
 
-        if ($totalValues <= $tmp2) {
-            echo "... number of values ($totalValues) is less than optimal (" . $tmp2 . ") (skipping)<br />";
+        if ($totalValues <= ($tmp2 + 50)) {
+            echo "... number of values ($totalValues) is less than (or about) optimal (" . $tmp2 . ") (skipping)<br />";
             return 0;
         }
 
@@ -607,6 +636,10 @@ class optimizer extends module
             //...
             $this->getConfig();
             if ($this->config['START_DAILY'] && ((int)date('H')) == ((int)$this->config['START_TIME'])) {
+                set_time_limit(3*60*60);
+                if ($this->config['AUTO_OPTIMIZE']) {
+                    $this->analyze($out,$this->config['AUTO_OPTIMIZE'],1);
+                }
                 $this->optimizeAll();
             }
         }
@@ -635,6 +668,13 @@ class optimizer extends module
     function install($data = '')
     {
         subscribeToEvent($this->name, 'HOURLY');
+        $this->getConfig();
+        if (!isset($this->config['START_DAILY'])) {
+            $this->config['START_DAILY']=1;
+            $this->config['START_TIME']=3;
+            $this->config['AUTO_OPTIMIZE']=10000;
+            $this->saveConfig();
+        }
         parent::install();
     }
 
