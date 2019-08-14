@@ -55,3 +55,7 @@
    [#inc optimizerdata_view.html#]
  [#endif VIEW_MODE#]
  <!-- / table optimizerdata view -->
+
+ [#if VIEW_MODE="optimize_now"#]
+ <iframe src="<#ROOTHTML#>modules/optimizer/optimize.php" width="100%" height="400" frameborder=0></iframe>
+ [#endif#]

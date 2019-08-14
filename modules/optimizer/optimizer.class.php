@@ -90,7 +90,6 @@ class optimizer extends module
      */
     function run()
     {
-        global $session;
         $out = array();
         if ($this->action == 'admin') {
             $this->admin($out);
@@ -125,7 +124,20 @@ class optimizer extends module
         $this->getConfig();
         $out['START_DAILY'] = (int)$this->config['START_DAILY'];
         $out['START_TIME'] = (int)$this->config['START_TIME'];
-        $out['AUTO_OPTIMIZE']=(int)$this->config['AUTO_OPTIMIZE'];
+        $out['AUTO_OPTIMIZE'] = (int)$this->config['AUTO_OPTIMIZE'];
+
+        /*
+        if ($this->view_mode=='optimize_now') {
+            if (defined('PATH_TO_PHP'))
+                $phpPath = PATH_TO_PHP;
+            else
+                $phpPath = IsWindowsOS() ? '..\server\php\php.exe' : 'php';
+
+            safe_exec($phpPath.' '.dirname(__FILE__).'/optimize.php');
+            echo "OK";
+            exit;
+        }
+        */
 
         if ($this->view_mode == 'update_settings') {
             global $start_time;
@@ -143,7 +155,7 @@ class optimizer extends module
 
         global $analyze;
         if ($analyze) {
-            $this->analyze($out,$this->config['AUTO_OPTIMIZE'],0);
+            $this->analyze($out, $this->config['AUTO_OPTIMIZE'], 0);
         }
 
         global $optimizenow;
@@ -183,7 +195,7 @@ class optimizer extends module
 
         set_time_limit(0);
 
-        $to_optimize=array();
+        $to_optimize = array();
 
         $result = array();
 
@@ -195,13 +207,13 @@ class optimizer extends module
              HAVING PTITLE != ''";
 
         $pvalues = SQLSelect($sqlQuery);
-        $seen_properties=array();
+        $seen_properties = array();
 
         $total = count($pvalues);
         $grand_total = 0;
         for ($i = 0; $i < $total; $i++) {
 
-            $seen_properties[]=$pvalues[$i]['ID'];
+            $seen_properties[] = $pvalues[$i]['ID'];
 
             if (defined('SEPARATE_HISTORY_STORAGE') && SEPARATE_HISTORY_STORAGE == 1) {
                 $history_table = createHistoryTable($pvalues[$i]['ID']);
@@ -218,44 +230,44 @@ class optimizer extends module
             if ($tmp['TOTAL']) {
                 $grand_total += $tmp['TOTAL'];
                 $rec = array('CLASS' => $pvalues[$i]['CTITLE'], 'PROPERTY' => $pvalues[$i]['PTITLE'], 'OBJECT' => $pvalues[$i]['OTITLE'], 'TOTAL' => $tmp['TOTAL']);
-                $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DBSafe($pvalues[$i]['PTITLE']) . "' AND OBJECT_NAME LIKE '" . DBSafe($pvalues[$i]['OTITLE']) . "'");
+                $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DbSafe($pvalues[$i]['PTITLE']) . "' AND OBJECT_NAME LIKE '" . DBSafe($pvalues[$i]['OTITLE']) . "'");
                 if ($opt_rec['ID']) {
                     $rec['OPTIMIZE_NOW'] = $opt_rec['ID'];
                 } else {
-                    $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DBSafe($pvalues[$i]['PTITLE']) . "' AND CLASS_NAME LIKE '" . DBSafe($pvalues[$i]['CTITLE']) . "'");
+                    $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DbSafe($pvalues[$i]['PTITLE']) . "' AND CLASS_NAME LIKE '" . DBSafe($pvalues[$i]['CTITLE']) . "'");
                     if ($opt_rec['ID']) {
                         $rec['OPTIMIZE_NOW'] = $opt_rec['ID'];
                     }
                 }
-                if (!$opt_rec['ID'] && $tmp['TOTAL']>$total_limit) {
-                    $rec['WARNING']=1;
-                    if ($auto_append==1) {
+                if (!$opt_rec['ID'] && $tmp['TOTAL'] > $total_limit) {
+                    $rec['WARNING'] = 1;
+                    if ($auto_append == 1) {
                         // add optimize record automatically
-                        $to_optimize[]=$rec;
+                        $to_optimize[] = $rec;
                     }
                 }
                 $result['RECORDS'][] = $rec;
             }
         }
 
-        foreach($to_optimize as $optimize_rec) {
-            $opt_rec=array();
-            $opt_rec['CLASS_NAME']=$optimize_rec['CLASS'];
-            $opt_rec['OBJECT_NAME']=$optimize_rec['OBJECT'];
-            $opt_rec['PROPERTY_NAME']=$optimize_rec['PROPERTY'];
-            $opt_rec['OPTIMIZE']='avg';
-            SQLInsert('optimizerdata',$opt_rec);
+        foreach ($to_optimize as $optimize_rec) {
+            $opt_rec = array();
+            $opt_rec['CLASS_NAME'] = $optimize_rec['CLASS'];
+            $opt_rec['OBJECT_NAME'] = $optimize_rec['OBJECT'];
+            $opt_rec['PROPERTY_NAME'] = $optimize_rec['PROPERTY'];
+            $opt_rec['OPTIMIZE'] = 'avg';
+            SQLInsert('optimizerdata', $opt_rec);
             //dprint($optimize_rec,false);
         }
 
-        if ($history_table == 'phistory' && count($seen_properties)>0) {
-            $unsortedData=SQLSelectOne("SELECT COUNT(*) as TOTAL FROM phistory WHERE VALUE_ID NOT IN (".implode(',',$seen_properties).")");
+        if ($history_table == 'phistory' && count($seen_properties) > 0) {
+            $unsortedData = SQLSelectOne("SELECT COUNT(*) AS TOTAL FROM phistory WHERE VALUE_ID NOT IN (" . implode(',', $seen_properties) . ")");
             $rec = array('CLASS' => 'Unknown', 'PROPERTY' => 'Unknown', 'OBJECT' => '', 'TOTAL' => (int)$unsortedData['TOTAL']);
-            $grand_total+=$rec['TOTAL'];
-            $result['RECORDS'][]=$rec;
+            $grand_total += $rec['TOTAL'];
+            $result['RECORDS'][] = $rec;
         }
 
-        usort($result['RECORDS'], function ($a,$b) {
+        usort($result['RECORDS'], function ($a, $b) {
             if ($a['TOTAL'] == $b['TOTAL']) {
                 return 0;
             }
@@ -306,7 +318,7 @@ class optimizer extends module
 
     function optimizeAll($id = 0)
     {
-        DebMes('Starting optimization procedure','optimizer');
+        DebMes('Starting optimization procedure', 'optimizer');
         set_time_limit(0);
         if ($id) {
             $records = SQLSelect("SELECT * FROM optimizerdata WHERE ID=" . (int)$id);
@@ -314,7 +326,7 @@ class optimizer extends module
 
             //remove unused properties
             if (!defined('SEPARATE_HISTORY_STORAGE') || SEPARATE_HISTORY_STORAGE == 0) {
-                echo "<h3>Unsorted data</h3>";
+                dprint("Unsorted data", false);
                 $sqlQuery = "SELECT pvalues.ID, properties.TITLE AS PTITLE, classes.TITLE AS CTITLE, objects.TITLE AS OTITLE
                FROM pvalues 
                LEFT JOIN objects ON pvalues.OBJECT_ID = objects.ID
@@ -328,11 +340,13 @@ class optimizer extends module
                     $seen_properties[] = $pvalues[$i]['ID'];
                 }
                 if (count($seen_properties) > 0) {
-                    $total = (int)current(SQLSelectOne("SELECT COUNT(*) as TOTAL FROM phistory WHERE VALUE_ID NOT IN (" . implode(',', $seen_properties) . ")"));
-                    echo "<p>Total unsorted: $total</p>";
-                    SQLExec("DELETE FROM phistory WHERE VALUE_ID NOT IN (" . implode(',', $seen_properties) . ")");
-                    echo "<p>DELETED</p>";
-                    DebMes('Total unsorted: '.$total.' deleted','optimizer');
+                    $total = (int)current(SQLSelectOne("SELECT COUNT(*) AS TOTAL FROM phistory WHERE VALUE_ID NOT IN (" . implode(',', $seen_properties) . ")"));
+                    dprint("Total unsorted: $total", false);
+                    if ($total>0) {
+                        SQLExec("DELETE FROM phistory WHERE VALUE_ID NOT IN (" . implode(',', $seen_properties) . ")");
+                        dprint("DELETED", false);
+                    }
+                    DebMes('Total unsorted: ' . $total . ' deleted', 'optimizer');
                 }
             }
             $records = SQLSelect("SELECT * FROM optimizerdata");
@@ -340,7 +354,6 @@ class optimizer extends module
         $rules = array();
         $total = count($records);
         for ($i = 0; $i < $total; $i++) {
-            $rule = array();
             if ($records[$i]['OBJECT_NAME'] && $records[$i]['OBJECT_NAME'] != '*') {
                 $key = $records[$i]['OBJECT_NAME'] . '.' . $records[$i]['PROPERTY_NAME'];
             } elseif ($records[$i]['CLASS_NAME'] && $records[$i]['CLASS_NAME'] != '*') {
@@ -393,7 +406,6 @@ class optimizer extends module
 
             if ($pvalue['CTITLE'] != '') {
                 $key = $pvalue['CTITLE'] . '.' . $pvalue['PTITLE'];
-                //echo $key."<br/>";
                 $rule = '';
 
                 if ($rules[$key])
@@ -405,18 +417,19 @@ class optimizer extends module
 
                 if ($rule) {
                     //processing
-                    echo "<h3>" . $pvalue['OTITLE'] . " (" . $key . ")</h3>";
-                    DebMes('Processing '.$pvalue['OTITLE']. " (" . $key . ")",'optimizer');
+                    dprint('Processing '.$pvalue['OTITLE'] . " (" . $key . ")", false);
+                    DebMes('Processing ' . $pvalue['OTITLE'] . " (" . $key . ")", 'optimizer');
 
                     $sqlQuery = "SELECT COUNT(*) as TOTAL
                         FROM $history_table
                        WHERE VALUE_ID = '" . $value_id . "'";
 
                     $total_before = current(SQLSelectOne($sqlQuery));
-                    DebMes('Before optimizing: '.$total_before,'optimizer');
+                    DebMes('Before optimizing: ' . $total_before, 'optimizer');
 
                     if (isset($rule['keep'])) {
-                        echo " removing old (" . (int)$rule['keep'] . ")";
+                        dprint(" removing old (" . (int)$rule['keep'] . ")",false);
+                        debmes(" removing old (" . (int)$rule['keep'] . ")",'optimizer');
                         $sqlQuery = "DELETE
                            FROM $history_table
                           WHERE VALUE_ID = '" . $value_id . "'
@@ -425,43 +438,35 @@ class optimizer extends module
                     }
 
                     if ($rule['optimize']) {
-                        echo str_repeat(' ', 1024);
-                        flush();
-
                         $sqlQuery = "SELECT UNIX_TIMESTAMP(ADDED)
                            FROM $history_table
                           WHERE VALUE_ID = '" . $value_id . "'
                           ORDER BY ADDED
                           LIMIT 1";
-
-                        echo "<br /><b>Before last MONTH</b><br />";
+                        dprint("Before last MONTH",false);
                         $end = time() - 30 * 24 * 60 * 60; // month end older
-                        $start = current(SQLSelectOne($sqlQuery));
+                        $tmp = SQLSelectOne($sqlQuery);
+                        if (!is_array($tmp)) {
+                            dprint("Skipping",false);
+                            continue;
+                        }
+                        $start = current($tmp);
                         $interval = 2 * 60 * 60; // two-hours interval
                         $this->optimizeHistoryData($value_id, $rule['optimize'], $interval, $start, $end);
 
-                        echo str_repeat(' ', 1024);
-                        flush();
-
-                        echo "<br /><b>Before last WEEK</b><br />";
+                        dprint("Before last WEEK",false);
                         $start = $end + 1;
                         $end = time() - 7 * 24 * 60 * 60; // week and older
                         $interval = 1 * 60 * 60; // one-hour interval
                         $this->optimizeHistoryData($value_id, $rule['optimize'], $interval, $start, $end);
 
-                        echo str_repeat(' ', 1024);
-                        flush();
-
-                        echo "<br /><b>Before YESTERDAY</b><br />";
+                        dprint("Before YESTERDAY",false);
                         $start = $end + 1;
                         $end = time() - 1 * 24 * 60 * 60; // day and older
                         $interval = 20 * 60; // 20 minutes interval
                         $this->optimizeHistoryData($value_id, $rule['optimize'], $interval, $start, $end);
 
-                        echo str_repeat(' ', 1024);
-                        flush();
-
-                        echo "<br /><b>Before last HOUR</b><br />";
+                        dprint("Before last HOUR",false);
                         $start = $end + 1;
                         $end = time() - 1 * 60 * 60; // 1 hour and older
                         $interval = 3 * 60; // 3 minutes interval
@@ -472,17 +477,16 @@ class optimizer extends module
                         FROM phistory
                        WHERE VALUE_ID = '" . $value_id . "'";
                     $total_after = current(SQLSelectOne($sqlQuery));
-                    echo " <b>(changed " . $total_before . " -> " . $total_after . ")</b><br />";
-                    $total_records_removed+=($total_before-$total_after);
-                    DebMes('After optimizing: '.$total_after,'optimizer');
+                    dprint("(changed " . $total_before . " -> " . $total_after . ")",false);
+                    $total_records_removed += ($total_before - $total_after);
+                    DebMes('After optimizing: ' . $total_after, 'optimizer');
                 }
             }
         }
 
+        DebMes('Optimization done. Total removed: ' . $total_records_removed, 'optimizer');
         SQLExec("OPTIMIZE TABLE phistory;");
-        DebMes('Optimization done. Total removed: '.$total_records_removed,'optimizer');
-        echo "<h1>DONE! (Total records removed: ".$total_records_removed.")</h1>";
-
+        dprint("DONE! (Total records removed: " . $total_records_removed . ")",false);
 
     }
 
@@ -505,7 +509,7 @@ class optimizer extends module
         $beginDate = date('Y-m-d H:i:s', $start);
         $endDate = date('Y-m-d H:i:s', $end);
 
-        echo "Value ID: $valueID <br />";
+        //echo "Value ID: $valueID <br />";
 
         if (defined('SEPARATE_HISTORY_STORAGE') && SEPARATE_HISTORY_STORAGE == 1) {
             $history_table = createHistoryTable($valueID);
@@ -513,7 +517,8 @@ class optimizer extends module
             $history_table = 'phistory';
         }
 
-        echo "Interval from " . $beginDate . " to " . $endDate . " (every " . $interval . " seconds)<br />";
+        dprint("Interval from " . $beginDate . " to " . $endDate . " (every " . $interval . " seconds)",false);
+        debmes("Interval from " . $beginDate . " to " . $endDate . " (every " . $interval . " seconds)",'optimizer');
 
         $sqlQuery = "SELECT COUNT(*)
                   FROM $history_table
@@ -523,7 +528,7 @@ class optimizer extends module
 
         $totalValues = (int)current(SQLSelectOne($sqlQuery));
 
-        echo "Total values: " . $totalValues . "<br>";
+        dprint("Total values: " . $totalValues,false);
 
         if ($totalValues < 2)
             return 0;
@@ -532,14 +537,13 @@ class optimizer extends module
         $tmp2 = round($tmp / $interval);
 
         if ($totalValues <= ($tmp2 + 50)) {
-            echo "... number of values ($totalValues) is less than (or about) optimal (" . $tmp2 . ") (skipping)<br />";
+            dprint("... number of values ($totalValues) is less than (or about) optimal (" . $tmp2 . ") (skipping)",false);
             return 0;
         }
 
-        echo "Optimizing (should be about " . $tmp2 . " records)...";
+        dprint("Optimizing (should be about " . $tmp2 . " records)...",false);
+        debmes("Optimizing (should be about " . $tmp2 . " records)...",'optimizer');
 
-        echo str_repeat(' ', 1024);
-        flush();
 
         $sqlQuery = "SELECT UNIX_TIMESTAMP(ADDED)
                   FROM $history_table
@@ -570,9 +574,7 @@ class optimizer extends module
                 continue;
             }
 
-            echo ".";
-            echo str_repeat(' ', 1024);
-            flush();
+            dprint(".",false);
 
             $sqlQuery = "SELECT * 
                      FROM $history_table
@@ -623,9 +625,8 @@ class optimizer extends module
             $start += $interval;
         }
 
-        echo "<b>Done</b> (removed: $totalRemoved)<br>";
-        SQLExec("OPTIMIZE TABLE `phistory`");
-
+        dprint("Done (removed: $totalRemoved)",false);
+        debmes("Done (removed: $totalRemoved)",'optimizer');
         return $totalRemoved;
     }
 
@@ -636,11 +637,20 @@ class optimizer extends module
             //...
             $this->getConfig();
             if ($this->config['START_DAILY'] && ((int)date('H')) == ((int)$this->config['START_TIME'])) {
-                set_time_limit(3*60*60);
+                if (defined('PATH_TO_PHP'))
+                    $phpPath = PATH_TO_PHP;
+                else
+                    $phpPath = IsWindowsOS() ? '..\server\php\php.exe' : 'php';
+                safe_exec($phpPath.' '.dirname(__FILE__).'/optimize.php');
+
+                /*
+                set_time_limit(3 * 60 * 60);
                 if ($this->config['AUTO_OPTIMIZE']) {
-                    $this->analyze($out,$this->config['AUTO_OPTIMIZE'],1);
+                    $this->analyze($out, $this->config['AUTO_OPTIMIZE'], 1);
                 }
                 $this->optimizeAll();
+                */
+
             }
         }
     }
@@ -670,9 +680,9 @@ class optimizer extends module
         subscribeToEvent($this->name, 'HOURLY');
         $this->getConfig();
         if (!isset($this->config['START_DAILY'])) {
-            $this->config['START_DAILY']=1;
-            $this->config['START_TIME']=3;
-            $this->config['AUTO_OPTIMIZE']=10000;
+            $this->config['START_DAILY'] = 1;
+            $this->config['START_TIME'] = 3;
+            $this->config['AUTO_OPTIMIZE'] = 10000;
             $this->saveConfig();
         }
         parent::install();
