@@ -125,6 +125,7 @@ class optimizer extends module
         $out['START_DAILY'] = (int)$this->config['START_DAILY'];
         $out['START_TIME'] = (int)$this->config['START_TIME'];
         $out['AUTO_OPTIMIZE'] = (int)$this->config['AUTO_OPTIMIZE'];
+        $out['KEEP_CACHED'] = (int)$this->config['KEEP_CACHED'];
 
         /*
         if ($this->view_mode=='optimize_now') {
@@ -145,6 +146,9 @@ class optimizer extends module
 
             global $start_daily;
             $this->config['START_DAILY'] = (int)$start_daily;
+
+            global $keep_cached;
+            $this->config['KEEP_CACHED'] = (int)$keep_cached;
 
             global $auto_optimize;
             $this->config['AUTO_OPTIMIZE'] = (int)$auto_optimize;
@@ -320,6 +324,26 @@ class optimizer extends module
     {
         DebMes('Starting optimization procedure', 'optimizer');
         set_time_limit(0);
+
+
+        $this->getConfig();
+
+        SQLExec("DELETE FROM shouts WHERE TO_DAYS(NOW())-TO_DAYS(ADDED)>7");
+        $keep_cached = (int)$this->config['KEEP_CACHED'];
+        if ($keep_cached) {
+            $deleted=0;
+            $result = getDirTree(ROOT.'cms/cached');
+            $total = count($result);
+            for($i=0;$i<$total;$i++) {
+                $tm=$result[$i]['TM'];
+                if ((time()-$tm)>$keep_cached*24*60*60) {
+                    $deleted++;
+                    @unlink($result[$i]['FILENAME']);
+                }
+            }
+            dprint("Cached files removed: ".$deleted,false);
+        }
+
         if ($id) {
             $records = SQLSelect("SELECT * FROM optimizerdata WHERE ID=" . (int)$id);
         } else {
@@ -679,6 +703,10 @@ class optimizer extends module
     {
         subscribeToEvent($this->name, 'HOURLY');
         $this->getConfig();
+        if (!isset($this->config['KEEP_CACHED'])) {
+            $this->config['KEEP_CACHED']=30;
+            $this->saveConfig();
+        }
         if (!isset($this->config['START_DAILY'])) {
             $this->config['START_DAILY'] = 1;
             $this->config['START_TIME'] = 3;

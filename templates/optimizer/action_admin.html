@@ -5,33 +5,36 @@
 <!-- table zwave_devices search -->
 <div style="display:none" id='api_settings'>
 &nbsp;
-<form action="?" method="post" enctype="multipart/form-data" name="frmEdit" class="form-horizontal">
+<form action="?" method="post" enctype="multipart/form-data" name="frmEdit" class="form">
 <fieldset>
 
 <div class="form-group">
- <div class="controls">
- <label><input type="checkbox" name="start_daily" value="1"[#if START_DAILY="1"#] checked[#endif#]> run daily</label>
- </div>
+ <label><input type="checkbox" name="start_daily" value="1"[#if START_DAILY="1"#] checked[#endif#]> Run daily</label>
 </div>
 
+    <div class="form-group">
+        <label class="control-label" for="start_time">
+            Start time (HH):
+        </label>
+        <input type="text" id="start_time" name="start_time" value="<#START_TIME#>" class="form-control">
+    </div>
+
 <div class="form-group">
-  <label class="control-label">
+  <label class="control-label" for="auto_optimize">
    Optimize history automatically when exceed:
-   (*)
   </label>
-  <div class="controls"><input type="text" name="auto_optimize" value="<#AUTO_OPTIMIZE#>" class="input">
-   (set 0 to disable)
-  </div>
+  <input type="text" id="auto_optimize" name="auto_optimize" value="<#AUTO_OPTIMIZE#>" class="form-control">
+   <span class="help-block">(set 0 to disable)</span>
  </div>
 
-<div class="form-group">
- <label class="control-label">
- Start time (HH):
- (*)
- </label>
- <div class="controls"><input type="text" name="start_time" value="<#START_TIME#>" class="input"></div>
-</div>
 
+    <div class="form-group">
+        <label class="control-label" for="keep_cached">
+            Keep cached files (days):
+        </label>
+        <input type="text" id="keep_cached" name="keep_cached" value="<#KEEP_CACHED#>" class="form-control">
+        <span class="help-block">(set 0 to keep all)</span>
+    </div>
 
 
 <div class="form-actions">
