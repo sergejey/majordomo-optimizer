@@ -328,22 +328,6 @@ class optimizer extends module
 
         $this->getConfig();
 
-        SQLExec("DELETE FROM shouts WHERE TO_DAYS(NOW())-TO_DAYS(ADDED)>7");
-        $keep_cached = (int)$this->config['KEEP_CACHED'];
-        if ($keep_cached) {
-            $deleted=0;
-            $result = getDirTree(ROOT.'cms/cached');
-            $total = count($result);
-            for($i=0;$i<$total;$i++) {
-                $tm=$result[$i]['TM'];
-                if ((time()-$tm)>$keep_cached*24*60*60) {
-                    $deleted++;
-                    @unlink($result[$i]['FILENAME']);
-                }
-            }
-            dprint("Cached files removed: ".$deleted,false);
-        }
-
         if ($id) {
             $records = SQLSelect("SELECT * FROM optimizerdata WHERE ID=" . (int)$id);
         } else {
@@ -510,6 +494,26 @@ class optimizer extends module
 
         DebMes('Optimization done. Total removed: ' . $total_records_removed, 'optimizer');
         SQLExec("OPTIMIZE TABLE phistory;");
+
+        dprint("Removing shouts...",false);
+        SQLExec("DELETE FROM shouts WHERE TO_DAYS(NOW())-TO_DAYS(ADDED)>7");
+        $keep_cached = (int)$this->config['KEEP_CACHED'];
+        if ($keep_cached) {
+            dprint("Removing cached...",false);
+            $deleted=0;
+            $result = getDirTree(ROOT.'cms/cached');
+            $total = count($result);
+            for($i=0;$i<$total;$i++) {
+                $tm=$result[$i]['TM'];
+                if ((time()-$tm)>$keep_cached*24*60*60) {
+                    $deleted++;
+                    @unlink($result[$i]['FILENAME']);
+                }
+            }
+            dprint("Cached files removed: ".$deleted,false);
+        }
+
+
         dprint("DONE! (Total records removed: " . $total_records_removed . ")",false);
 
     }
