@@ -165,7 +165,7 @@ class optimizer extends module
         global $optimizenow;
         global $id;
         if ($optimizenow) {
-            $this->optimizeAll($id);
+            $this->optimizeAll($id,gr('object'),gr('property'));
             exit;
         }
 
@@ -219,6 +219,7 @@ class optimizer extends module
 
             $seen_properties[] = $pvalues[$i]['ID'];
 
+
             if (defined('SEPARATE_HISTORY_STORAGE') && SEPARATE_HISTORY_STORAGE == 1) {
                 $history_table = createHistoryTable($pvalues[$i]['ID']);
             } else {
@@ -234,11 +235,12 @@ class optimizer extends module
             if ($tmp['TOTAL']) {
                 $grand_total += $tmp['TOTAL'];
                 $rec = array('CLASS' => $pvalues[$i]['CTITLE'], 'PROPERTY' => $pvalues[$i]['PTITLE'], 'OBJECT' => $pvalues[$i]['OTITLE'], 'TOTAL' => $tmp['TOTAL']);
+
                 $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DbSafe($pvalues[$i]['PTITLE']) . "' AND OBJECT_NAME LIKE '" . DBSafe($pvalues[$i]['OTITLE']) . "'");
                 if ($opt_rec['ID']) {
                     $rec['OPTIMIZE_NOW'] = $opt_rec['ID'];
                 } else {
-                    $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DbSafe($pvalues[$i]['PTITLE']) . "' AND CLASS_NAME LIKE '" . DBSafe($pvalues[$i]['CTITLE']) . "'");
+                    $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DbSafe($pvalues[$i]['PTITLE']) . "' AND OBJECT_NAME='' AND CLASS_NAME LIKE '" . DBSafe($pvalues[$i]['CTITLE']) . "'");
                     if ($opt_rec['ID']) {
                         $rec['OPTIMIZE_NOW'] = $opt_rec['ID'];
                     }
@@ -320,7 +322,7 @@ class optimizer extends module
     }
 
 
-    function optimizeAll($id = 0)
+    function optimizeAll($id = 0, $object = '', $property = '')
     {
         DebMes('Starting optimization procedure', 'optimizer');
         set_time_limit(0);
@@ -331,7 +333,6 @@ class optimizer extends module
         if ($id) {
             $records = SQLSelect("SELECT * FROM optimizerdata WHERE ID=" . (int)$id);
         } else {
-
             //remove unused properties
             if (!defined('SEPARATE_HISTORY_STORAGE') || SEPARATE_HISTORY_STORAGE == 0) {
                 dprint("Unsorted data", false);
@@ -389,7 +390,14 @@ class optimizer extends module
                LEFT JOIN properties ON pvalues.PROPERTY_ID = properties.ID
              HAVING PTITLE != ''";
 
+        if ($object!='' && $property!='') {
+            $sqlQuery.=" AND PTITLE='".$property."' AND OTITLE='".$object."'";
+        }
+
+
         $values = SQLSelect($sqlQuery);
+
+
         $total_records_removed = 0;
 
         $total = count($values);
@@ -412,16 +420,18 @@ class optimizer extends module
 
             $pvalue = SQLSelectOne($sqlQuery);
 
+
             if ($pvalue['CTITLE'] != '') {
                 $key = $pvalue['CTITLE'] . '.' . $pvalue['PTITLE'];
                 $rule = '';
 
-                if ($rules[$key])
+                if ($rules[$key]) {
                     $rule = $rules[$key];
-                elseif ($rules[$pvalue['OTITLE'] . '.' . $pvalue['PTITLE']])
+                } elseif ($rules[$pvalue['OTITLE'] . '.' . $pvalue['PTITLE']]) {
                     $rule = $rules[$pvalue['OTITLE'] . '.' . $pvalue['PTITLE']];
-                elseif ($rules[$pvalue['PTITLE']])
+                } elseif ($rules[$pvalue['PTITLE']]) {
                     $rule = $rules[$pvalue['PTITLE']];
+                }
 
                 if ($rule) {
                     //processing
