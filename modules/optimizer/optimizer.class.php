@@ -421,7 +421,7 @@ class optimizer extends module
             $pvalue = SQLSelectOne($sqlQuery);
 
 
-            if ($pvalue['OTITLE'] != '') {
+            if ($pvalue['CTITLE'] != '') {
                 $key = $pvalue['OTITLE'] . '.' . $pvalue['PTITLE'];
 
                 $rule = '';
