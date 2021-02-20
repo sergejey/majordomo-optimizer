@@ -422,16 +422,18 @@ class optimizer extends module
 
 
             if ($pvalue['CTITLE'] != '') {
-                $key = $pvalue['CTITLE'] . '.' . $pvalue['PTITLE'];
+                $key = $pvalue['OTITLE'] . '.' . $pvalue['PTITLE'];
+
                 $rule = '';
 
                 if ($rules[$key]) {
                     $rule = $rules[$key];
-                } elseif ($rules[$pvalue['OTITLE'] . '.' . $pvalue['PTITLE']]) {
-                    $rule = $rules[$pvalue['OTITLE'] . '.' . $pvalue['PTITLE']];
+                } elseif ($rules[$pvalue['CTITLE'] . '.' . $pvalue['PTITLE']]) {
+                    $key = $pvalue['CTITLE'] . '.' . $pvalue['PTITLE'];
                 } elseif ($rules[$pvalue['PTITLE']]) {
-                    $rule = $rules[$pvalue['PTITLE']];
+                    $key = $pvalue['PTITLE'];
                 }
+                $rule = $rules[$key];
 
                 if ($rule) {
                     //processing
