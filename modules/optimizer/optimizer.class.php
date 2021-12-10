@@ -636,7 +636,7 @@ class optimizer extends module
                 elseif ($type == 'sum')
                     $newValue = array_sum($values);
                 else
-                    $newValue = array_sum($values) / $total;
+                    $newValue = round(array_sum($values) / $total,4);
 
                 $sqlQuery = "DELETE
                         FROM $history_table
