@@ -461,7 +461,7 @@ class optimizer extends module
                         $sqlQuery = "SELECT UNIX_TIMESTAMP(ADDED)
                            FROM $history_table
                           WHERE VALUE_ID = '" . $value_id . "'
-                          ORDER BY ADDED
+                          ORDER BY ADDED, ID
                           LIMIT 1";
                         dprint("Before last MONTH",false);
                         $end = time() - 30 * 24 * 60 * 60; // month end older
@@ -589,7 +589,7 @@ class optimizer extends module
                   FROM $history_table
                  WHERE VALUE_ID =  '" . $valueID . "'
                    AND ADDED    >= '" . $beginDate . "'
-                 ORDER BY ADDED
+                 ORDER BY ADDED, ID
                  LIMIT 1";
 
         $firstStart = current(SQLSelectOne($sqlQuery));
@@ -598,7 +598,7 @@ class optimizer extends module
                   FROM $history_table
                  WHERE VALUE_ID = '" . $valueID . "'
                    AND ADDED    <= '" . $endDate . "'
-                 ORDER BY ADDED DESC
+                 ORDER BY ADDED DESC, ID DESC
                  LIMIT 1";
 
         $lastStart = current(SQLSelectOne($sqlQuery));
