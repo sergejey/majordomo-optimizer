@@ -237,15 +237,15 @@ class optimizer extends module
                 $rec = array('CLASS' => $pvalues[$i]['CTITLE'], 'PROPERTY' => $pvalues[$i]['PTITLE'], 'OBJECT' => $pvalues[$i]['OTITLE'], 'TOTAL' => $tmp['TOTAL']);
 
                 $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DbSafe($pvalues[$i]['PTITLE']) . "' AND OBJECT_NAME LIKE '" . DBSafe($pvalues[$i]['OTITLE']) . "'");
-                if ($opt_rec['ID']) {
+                if (isset($opt_rec['ID'])) {
                     $rec['OPTIMIZE_NOW'] = $opt_rec['ID'];
                 } else {
                     $opt_rec = SQLSelectOne("SELECT * FROM optimizerdata WHERE PROPERTY_NAME LIKE '" . DbSafe($pvalues[$i]['PTITLE']) . "' AND OBJECT_NAME='' AND CLASS_NAME LIKE '" . DBSafe($pvalues[$i]['CTITLE']) . "'");
-                    if ($opt_rec['ID']) {
+                    if (isset($opt_rec['ID'])) {
                         $rec['OPTIMIZE_NOW'] = $opt_rec['ID'];
                     }
                 }
-                if (!$opt_rec['ID'] && $tmp['TOTAL'] > $total_limit) {
+                if (!isset($opt_rec['ID']) && $tmp['TOTAL'] > $total_limit) {
                     $rec['WARNING'] = 1;
                     if ($auto_append == 1) {
                         // add optimize record automatically
@@ -426,16 +426,16 @@ class optimizer extends module
 
                 $rule = '';
 
-                if ($rules[$key]) {
+                if (isset($rules[$key])) {
                     $rule = $rules[$key];
-                } elseif ($rules[$pvalue['CTITLE'] . '.' . $pvalue['PTITLE']]) {
+                } elseif (isset($rules[$pvalue['CTITLE'] . '.' . $pvalue['PTITLE']])) {
                     $key = $pvalue['CTITLE'] . '.' . $pvalue['PTITLE'];
-                } elseif ($rules[$pvalue['PTITLE']]) {
+                } elseif (isset($rules[$pvalue['PTITLE']])) {
                     $key = $pvalue['PTITLE'];
                 }
-                $rule = $rules[$key];
+                $rule = isset($rules[$key]) ? $rules[$key] : '';
 
-                if ($rule) {
+                if ($rule != '') {
                     //processing
                     dprint('Processing '.$pvalue['OTITLE'] . " (" . $key . ")", false);
                     DebMes('Processing ' . $pvalue['OTITLE'] . " (" . $key . ")", 'optimizer');
